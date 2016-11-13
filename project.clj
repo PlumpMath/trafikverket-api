@@ -6,6 +6,7 @@
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.7.170"]
+                 [org.clojure/core.async "0.2.395"]
                  [com.cemerick/piggieback "0.2.1"]
                  [com.cemerick/url "0.1.1"]]
 

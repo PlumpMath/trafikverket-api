@@ -1,6 +1,8 @@
 (ns next-train.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.nodejs :as nodejs]
-            [next-train.nodehttp :as http]))
+            [next-train.nodehttp :as http]
+            [cljs.core.async :as async]))
 
 (nodejs/enable-util-print!)
 
@@ -37,7 +39,10 @@
 
 
 (defn -main []
-  (http/post url (build-xml) print-it))
+  (println api-key)
+  (go
+    (println (async/<!
+              (http/post url (build-xml))))))
 
 
 (set! *main-cli-fn* -main)
@@ -49,6 +54,12 @@
 
   (build-xml)
 
-  (http/post url (build-xml) print-it)
+  (go
+    (println (async/<!
+              (http/post url (build-xml)))))
+
+    (go
+      (println (async/<!
+                (http/get "http://www.aftonbladet.se"))))
 
   )
