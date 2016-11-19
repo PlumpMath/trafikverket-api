@@ -13,10 +13,7 @@
                      (.-env)
                      (.-TRAFIK_API_KEY)))
 
-(def result-limit 1)
-
-
-(defn print-it [data] (println data))
+(def result-limit 10)
 
 
 (defn build-xml []
@@ -27,39 +24,40 @@
                    [{:_attr {:objecttype "TrainAnnouncement"
                              :limit result-limit}}
                     {:FILTER
-                     [{:EQ
-                       [{:_attr {:name "LocationSignature"
-                                 :value "Gm"}}]}]}
-                    {:INCLUDE "Prognisticated"}
-                    {:INCLUDE "AdvertisedLocationName"}
+                     [{:AND
+                       [{:EQ
+                         [{:_attr {:name "LocationSignature"
+                                   :value "Gm"}}]}
+                       {:EQ
+                         [{:_attr {:name "ToLocation.LocationName"
+                                   :value "Vö"}}]}
+                        {:GT
+                         [{:_attr {:name "AdvertisedTimeAtLocation"
+                                   :value "$now"}}]}]}]}
                     {:INCLUDE "LocationSignature"}
                     {:INCLUDE "AdvertisedTimeAtLocation"}
                     {:INCLUDE "ToLocation"}
-                    {:INCLUDE "TrackAtLocation"}]}]})))
+                    {:INCLUDE "AdvertisedTrainIdent"}]}]})))
+
+
+(defn filter-body [body]
+  (->>
+   (-> (js->clj (JSON.parse body) :keywordize-keys true)
+       :RESPONSE
+       :RESULT
+       first
+       :TrainAnnouncement)
+   (reduce #(if-not (contains? % (keyword (:AdvertisedTrainIdent %2)))
+             (assoc % (keyword (:AdvertisedTrainIdent %2)) (:AdvertisedTimeAtLocation %2))
+             %)
+          {})))
 
 
 (defn -main []
-  (println api-key)
-  (go
-    (println (async/<!
-              (http/post url (build-xml))))))
+  (go (do (println "Departures:")
+          (doseq [[train time] (filter-body (async/<! (http/post url (build-xml))))]
+            (println
+             (str "Train: " (name train) "\t"  (last (clojure.string/split time "T"))))))))
 
 
 (set! *main-cli-fn* -main)
-
-
-(comment
-
-  (-main)
-
-  (build-xml)
-
-  (go
-    (println (async/<!
-              (http/post url (build-xml)))))
-
-    (go
-      (println (async/<!
-                (http/get "http://www.aftonbladet.se"))))
-
-  )
