@@ -27,22 +27,20 @@
         (println (str "Error: " status))
         (async/close! out)))))
 
-
-(defn get [target]
-  "Get takes a path that must start with http:// and a callback function"
-  (let [out (async/chan)]
-    (http.get
-     (build-request-options (url target) "GET")
-     #(handle-response % (fn [x] (async/put! out x)) out))
-    out))
-
-
-(defn post [target body]
-  "Post takes a path that must start with http:// and a callback function"
+(defn request [target request-type body]
   (let [out (async/chan)]
     (doto (http.request
-           (build-request-options (url target) "POST")
+           (build-request-options (url target) request-type)
            #(handle-response % (fn [x] (async/put! out x)) out))
       (.write body)
       (.end))
     out))
+
+(defn get [target]
+  "Get takes a path that must start with http:// and a callback function"
+  (request target "GET" ""))
+
+
+(defn post [target body]
+  "Post takes a path that must start with http:// and a callback function"
+  (request target "POST" body))
